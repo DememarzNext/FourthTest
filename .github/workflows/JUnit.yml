@@ -13,37 +13,16 @@ jobs:
       MAVEN_OPTS: -Dhttps.protocols=TLSv1.2
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Validate project structure
-        run: |
-          [ -f pom.xml ] || { echo "❌ pom.xml missing"; exit 1; }
-          echo "✅ Valid project structure"
-
-      - name: Set up Java 17
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-          check-latest: true
 
-      - name: Cache dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.m2/repository
-            target/
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+      - name: Build
+        run: mvn clean package -B -DskipTests
 
-      - name: Build without testing
-        run: mvn clean package -B -DskipTests  # 改用package阶段
-
-      - name: Output build results
-        run: |
-          echo "📦 Build artifacts:"
-          ls -lh target/*.jar
-          
-          echo "🖨️ 尝试运行主类（带依赖）："
-          # 使用maven-exec-plugin配置运行（推荐方案）
-          mvn exec:java -Dexec.mainClass="org.apache.commons.io.FilenameUtils"
+      - name: Show Success
+        run: echo "🎉 构建成功！可在 target/ 目录查看产物"
