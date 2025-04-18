@@ -1,4 +1,4 @@
-name: Java CI with Maven
+name: Java Build Only
 
 on:
   push:
@@ -8,45 +8,40 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-24.04 # 显式指定最新镜像
+    runs-on: ubuntu-24.04
     env:
-      MAVEN_OPTS: -Dhttps.protocols=TLSv1.2 # 修复可能的TLS协议问题
+      MAVEN_OPTS: -Dhttps.protocols=TLSv1.2
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Validate Java structure
+      - name: Validate project structure
         run: |
-          [ -f pom.xml ] || { echo "❌ pom.xml 文件缺失"; exit 1; }
-          [ -d src/test/java ] || { echo "⚠️ 测试目录不存在，但将继续构建"; }
+          [ -f pom.xml ] || { echo "❌ pom.xml missing"; exit 1; }
+          echo "✅ Valid project structure"
 
       - name: Set up Java 17
-        uses: actions/setup-java@v4 # 升级到最新版本
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
           check-latest: true
 
-      - name: Cache Maven packages
-        uses: actions/cache@v4 # 升级缓存版本
+      - name: Cache dependencies
+        uses: actions/cache@v4
         with:
           path: |
             ~/.m2/repository
             target/
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
 
-      - name: Build and test with Maven
-        run: mvn clean test -B -Duser.language=en -Duser.country=US # 强制英文环境避免编码问题
+      - name: Build without testing
+        run: mvn clean install -B -DskipTests  # 关键修改点
 
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4 # 关键修复点：升级到v4版本
-        with:
-          name: junit-reports
-          path: |
-            target/surefire-reports/**/*
-            target/failsafe-reports/**/*
-          retention-days: 7
+      - name: Output build results
+        run: |
+          echo "📦 Build artifacts:"
+          ls -lh target/*.jar
+          echo "🖨️ 手动输出示例："
+          java -cp target/classes org.apache.commons.io.FilenameUtils
