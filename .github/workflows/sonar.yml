@@ -1,0 +1,44 @@
+name: Java Build and SonarQube Scan
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build_and_scan:
+    runs-on: ubuntu-24.04
+    env:
+      MAVEN_OPTS: -Dhttps.protocols=TLSv1.2
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} # 从 GitHub Secrets 中读取 SonarQube Token
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Build
+        run: mvn clean package -B -DskipTests
+
+      - name: Install SonarQube Scanner
+        run: |
+          # 安装 SonarQube Scanner
+          curl -sSLo sonar-scanner-cli.zip https://github.com/SonarSource/sonar-scanner-cli/releases/download/4.7.0.2747/sonar-scanner-cli-4.7.0.2747-linux.zip
+          unzip sonar-scanner-cli.zip
+          export PATH=$PWD/sonar-scanner-4.7.0.2747-linux/bin:$PATH
+
+      - name: Run SonarQube Analysis
+        run: |
+          sonar-scanner \
+            -Dsonar.projectKey=my-java-project \
+            -Dsonar.sources=src \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+
+      - name: Show Success
+        run: echo "🎉 构建和 SonarQube 静态扫描成功！"
