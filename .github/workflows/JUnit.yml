@@ -37,11 +37,13 @@ jobs:
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
 
       - name: Build without testing
-        run: mvn clean install -B -DskipTests  # 关键修改点
+        run: mvn clean package -B -DskipTests  # 改用package阶段
 
       - name: Output build results
         run: |
           echo "📦 Build artifacts:"
           ls -lh target/*.jar
-          echo "🖨️ 手动输出示例："
-          java -cp target/classes org.apache.commons.io.FilenameUtils
+          
+          echo "🖨️ 尝试运行主类（带依赖）："
+          # 使用maven-exec-plugin配置运行（推荐方案）
+          mvn exec:java -Dexec.mainClass="org.apache.commons.io.FilenameUtils"
